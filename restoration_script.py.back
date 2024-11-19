@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+from datetime import datetime
+
+# Get the list of directories and files in /backup/
+def restore(backup_path=None):
+    all_entries = os.listdir(backup_path)
+    
+    # Filter out non-date directories
+    date_directories = [entry for entry in all_entries if entry.count('-') == 2]
+    
+    # Convert to datetime objects
+    date_objects = [datetime.strptime(date, "%Y-%m-%d") for date in date_directories]
+    
+    # Find the latest date
+    latest_date = max(date_objects).strftime("%Y-%m-%d")
+    
+    # Construct the new path
+    new_path = f"{backup_path}{latest_date}/accounts/"
+    
+    # Perform ls on the new_path and run the restore command for each .tar.gz file
+    if os.path.exists(new_path):
+        new_path_contents = os.listdir(new_path)
+        tar_gz_files = [item for item in new_path_contents if item.endswith('.tar.gz')]
+        # print(f"Contents of the latest date-directory ({new_path}):")
+        for item in tar_gz_files:
+            # print(item)
+            item_name = item[:-7]  # Remove the '.tar.gz' extension
+            # print(item_name)
+            # Construct the full path to the backup file
+            backup_file_path = f"{new_path}{item}"
+    
+            # Delete if account exists
+            command1 = f"sudo /scripts/removeacct {item_name} --force"
+            subprocess.run(command1, shell=True)
+    
+            # Run the restore command
+            command2 = f"sudo /scripts/restorepkg {backup_file_path}"
+            subprocess.run(command2, shell=True)
+    else:
+        pass
+    # print(f"The directory {new_path} does not exist.")
+
+if __name__ == "__main__":
+    restore(backup_path = "/home/systems/backup/")
